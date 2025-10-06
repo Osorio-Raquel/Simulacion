@@ -7,12 +7,12 @@ import { RouterLink, RouterView } from 'vue-router'
     <header class="main-header">
       <h1>Ejercicios de Simulación</h1>
       <nav class="main-nav">
-        <RouterLink to="/azucar">Azúcar</RouterLink>
-        <RouterLink to="/encontrarmax">Encontrar Max</RouterLink>
-        <RouterLink to="/granero">Granero</RouterLink>
-        <RouterLink to="/juegos">Juegos</RouterLink>
         <RouterLink to="/plazofijo">Plazo Fijo</RouterLink>
+        <RouterLink to="/encontrarmax">Encontrar Max</RouterLink>
+        <RouterLink to="/juegos">Juegos</RouterLink>
         <RouterLink to="/tienda">Tienda</RouterLink>
+        <RouterLink to="/granero">Granero</RouterLink>
+        <RouterLink to="/azucar">Azúcar</RouterLink>
       </nav>
     </header>
     <main class="main-content">

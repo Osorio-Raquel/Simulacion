@@ -3,7 +3,6 @@
     <div class="container">
       <header>
         <h1>Simulación de Gestión de Tienda</h1>
-        <div class="subtitle">Análisis de ventas y ganancias por día</div>
       </header>
 
       <div class="content">
@@ -49,11 +48,11 @@
           <!-- Editor de Probabilidades -->
           <div class="probabilities-panel">
             <div class="probabilities-header">
-              <h3>🎯 Distribución de Probabilidades de Compra</h3>
+              <h3> Distribución de Probabilidades de Compra</h3>
               <div class="probabilities-summary">
                 <span>Total: {{ sumaProbabilidades.toFixed(2) }}</span>
                 <span :class="sumaProbabilidades === 1 ? 'valid' : 'invalid'">
-                  {{ sumaProbabilidades === 1 ? '✅ Válido' : '❌ Debe sumar 1.00' }}
+                  {{ sumaProbabilidades === 1 ? ' Válido' : ' Debe sumar 1.00' }}
                 </span>
               </div>
             </div>
@@ -87,20 +86,20 @@
                   class="delete-btn"
                   :disabled="probabilidades.length <= 1"
                 >
-                  🗑️
+                  eliminar
                 </button>
               </div>
             </div>
 
             <div class="probabilities-controls">
               <button @click="agregarProbabilidad" class="add-btn">
-                ➕ Agregar Artículo
+                 Agregar Artículo
               </button>
               <button @click="resetearProbabilidades" class="reset-btn">
-                🔄 Restablecer
+                 Restablecer
               </button>
               <button @click="distribuirEquitativamente" class="distribute-btn">
-                ⚖️ Distribuir Equitativamente
+                 Distribuir Equitativamente
               </button>
             </div>
 
@@ -117,7 +116,7 @@
           </div>
 
           <button @click="ejecutarSimulacion" class="run-btn" :disabled="sumaProbabilidades !== 1">
-            🏪 Ejecutar Simulación {{ sumaProbabilidades !== 1 ? '(Probabilidades inválidas)' : '' }}
+             Ejecutar Simulación {{ sumaProbabilidades !== 1 ? '(Probabilidades inválidas)' : '' }}
           </button>
         </div>
 
@@ -154,7 +153,7 @@
             <h3>Pruebas de Escritorio por Día</h3>
             <div class="pruebas-controls">
               <button @click="mostrarTodos = !mostrarTodos" class="toggle-btn">
-                {{ mostrarTodos ? '📕 Ocultar Todos' : '📖 Mostrar Todos' }}
+                {{ mostrarTodos ? ' Ocultar Todos' : ' Mostrar Todos' }}
               </button>
             </div>
           </div>
@@ -184,7 +183,7 @@
         <!-- Resumen Final -->
         <div class="resumen-final" v-if="dias.length > 0">
           <div class="resumen-header">
-            <h3>📊 RESUMEN GENERAL</h3>
+            <h3> RESUMEN GENERAL</h3>
           </div>
           <div class="resumen-grid">
             <div class="resumen-item">
@@ -240,7 +239,7 @@ import { ref, computed } from 'vue'
 // Parámetros configurables
 const HORAS = ref(10)
 const SIMULACIONES = ref(5)
-const LLEGADAS_MIN = ref(2.0)
+const LLEGADAS_MIN = ref(0.0)
 const LLEGADAS_MAX = ref(4.0)
 const COSTO_FIJO = ref(300.0)
 const COSTO_ART = ref(50.0)

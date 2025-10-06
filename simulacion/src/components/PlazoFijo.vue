@@ -3,38 +3,9 @@
     <div class="container">
       <header>
         <h1>Simulador de Depósito a Plazo Fijo</h1>
-        <div class="subtitle">Calcule su inversión de forma rápida y sencilla</div>
       </header>
 
       <div class="content">
-        <div class="sidebar">
-          <div class="section">
-            <h2 class="section-title">1. Definición del Problema</h2>
-            <p>Este simulador calcula el rendimiento de un depósito a plazo fijo, considerando el monto inicial, la tasa de interés anual y el plazo de la inversión.</p>
-          </div>
-
-          <div class="section">
-            <h2 class="section-title">2. Diccionario de Variables</h2>
-            <table class="variable-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Sigla</th>
-                  <th>Clasificación</th>
-                  <th>Unidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="variable in variables" :key="variable.nombre">
-                  <td>{{ variable.nombre }}</td>
-                  <td>{{ variable.sigla }}</td>
-                  <td>{{ variable.clasificacion }}</td>
-                  <td>{{ variable.unidad }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
 
         <div class="main-content">
           <div class="section">
@@ -69,7 +40,7 @@
             </div>
 
             <button @click="agregarSimulacion" class="simulate-btn">
-              <span class="btn-icon">📈</span>
+              <span class="btn-icon"></span>
               Calcular y Agregar Simulación
             </button>
 

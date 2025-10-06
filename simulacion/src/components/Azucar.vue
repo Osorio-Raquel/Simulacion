@@ -48,7 +48,7 @@
             >
           </div>
           <button @click="ejecutarSimulacion" class="run-btn">
-            📊 Ejecutar Simulación
+            Ejecutar Simulación
           </button>
         </div>
 
@@ -114,9 +114,7 @@
           <!-- Resumen final -->
           <div class="resumen-panel">
             <div class="resumen-header">
-              <span class="resumen-icon">📊</span>
               <span class="resumen-text">RESUMEN FINAL</span>
-              <span class="resumen-icon">📊</span>
             </div>
             <div class="resumen-details">
               <div class="resumen-item">
@@ -309,7 +307,7 @@ const ejecutarSimulacion = () => {
     let detallePedido = ""
     let pedidosEnTransito = false
 
-    if ((day - 1) % REVIEW_PERIOD === 0) {
+    if ((day) % REVIEW_PERIOD === 0) {
       orderedQty = Math.max(0.0, CAPACITY.value - inventory)
       if (orderedQty > 0.0) {
         const lead = Math.floor(rand.nextDouble() * 3) + 1 // 1,2 o 3 días

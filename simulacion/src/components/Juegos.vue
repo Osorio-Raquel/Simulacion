@@ -3,7 +3,6 @@
     <div class="container">
       <header>
         <h1>Simulación de Juegos de Dados</h1>
-        <div class="subtitle">Casa vs Jugador - Lanzamientos de 2 dados</div>
       </header>
 
       <div class="content">
@@ -28,7 +27,7 @@
             >
           </div>
           <button @click="ejecutarSimulacion" class="run-btn">
-            🎲 Ejecutar Simulación
+             Ejecutar Simulación
           </button>
         </div>
 
@@ -88,9 +87,7 @@
           <!-- Resumen final -->
           <div class="resumen-panel">
             <div class="resumen-header">
-              <span class="resumen-icon">📊</span>
               <span class="resumen-text">RESUMEN FINAL</span>
-              <span class="resumen-icon">📊</span>
             </div>
             <div class="resumen-details">
               <div class="resumen-item">

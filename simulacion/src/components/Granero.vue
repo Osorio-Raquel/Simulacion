@@ -3,7 +3,6 @@
     <div class="container">
       <header>
         <h1>Simulación de Granero - Distribución Poisson por Intervalos</h1>
-        <div class="subtitle">300 días de producción de huevos y pollos</div>
       </header>
 
       <div class="content">
@@ -13,6 +12,28 @@
             <div class="config-group">
               <label for="dias">Días a simular:</label>
               <input type="number" id="dias" v-model.number="DAYS" min="1" max="1000">
+            </div>
+            <div class="config-group">
+              <label for="mediaPoisson">Media Poisson (λ):</label>
+              <input
+                type="number"
+                id="mediaPoisson"
+                v-model.number="mediaPoisson"
+                min="0.1"
+                max="10"
+                step="0.1"
+              >
+            </div>
+            <div class="config-group">
+              <label for="decimales">Decimales a considerar:</label>
+              <input
+                type="number"
+                id="decimales"
+                v-model.number="decimales"
+                min="2"
+                max="6"
+                step="1"
+              >
             </div>
             <div class="config-group">
               <label for="precioHuevo">Precio huevo (Bs):</label>
@@ -28,14 +49,44 @@
             </div>
           </div>
 
+          <!-- Panel de control Poisson -->
+          <div class="poisson-control-panel">
+            <div class="poisson-control-header">
+              <h3> Configuración Distribución Poisson</h3>
+              <button @click="calcularIntervalosPoisson" class="calc-btn">
+                 Calcular Intervalos Poisson
+              </button>
+            </div>
+
+            <!-- Información de la distribución -->
+            <div class="poisson-info-panel" v-if="infoPoisson.probabilidades.length > 0">
+              <div class="poisson-info-header">
+                <h4>Distribución Poisson - λ = {{ mediaPoisson }}</h4>
+                <div class="poisson-stats">
+                  <span>Media teórica: {{ infoPoisson.mediaTeorica.toFixed(4) }}</span>
+                  <span>Varianza: {{ infoPoisson.varianza.toFixed(4) }}</span>
+                </div>
+              </div>
+
+              <div class="poisson-distribucion">
+                <div v-for="prob in infoPoisson.probabilidades" :key="prob.k" class="poisson-item">
+                  <span class="poisson-k">P(X={{ prob.k }})</span>
+                  <span class="poisson-prob">{{ prob.probabilidad.toFixed(6) }}</span>
+                  <span class="poisson-percent">({{ prob.porcentaje }})</span>
+                  <span class="poisson-acum">Acum: {{ prob.acumulado.toFixed(6) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Editor de Intervalos Poisson -->
           <div class="intervalos-panel">
             <div class="intervalos-header">
-              <h3>📊 Intervalos de Distribución Poisson</h3>
+              <h3>Intervalos de Distribución Poisson</h3>
               <div class="intervalos-summary">
                 <span>Total intervalos: {{ LIMITES.length }}</span>
-                <span :class="LIMITES[LIMITES.length - 1] === 1 ? 'valid' : 'invalid'">
-                  {{ LIMITES[LIMITES.length - 1] === 1 ? '✅ Último: 1.00' : '❌ Último debe ser 1.00' }}
+                <span :class="ultimoLimiteValido ? 'valid' : 'invalid'">
+                  {{ ultimoLimiteValido ? ' Valido: 1.00' : ' No Valido 1.00' }}
                 </span>
               </div>
             </div>
@@ -45,9 +96,9 @@
                 <div class="intervalo-info">
                   <span class="intervalo-label">Intervalo {{ index }}:</span>
                   <span class="intervalo-rango">
-                    {{ index === 0 ? '0.00' : LIMITES[index - 1].toFixed(2) }}
+                    {{ index === 0 ? '0.00' : formatearDecimal(LIMITES[index - 1]) }}
                     ≤ u <
-                    {{ limite.toFixed(2) }}
+                    {{ formatearDecimal(limite) }}
                   </span>
                   <span class="intervalo-huevos">→ {{ index }} huevos</span>
                 </div>
@@ -67,14 +118,14 @@
             </div>
 
             <div class="intervalos-controls">
-              <button @click="agregarIntervalo" class="add-btn" :disabled="LIMITES.length >= 10">
-                ➕ Agregar Intervalo
+              <button @click="agregarIntervalo" class="add-btn" :disabled="LIMITES.length >= 15">
+                 Agregar Intervalo
               </button>
               <button @click="eliminarUltimoIntervalo" class="delete-btn" :disabled="LIMITES.length <= 2">
-                🗑️ Eliminar Último
+                 Eliminar Último
               </button>
               <button @click="resetearIntervalos" class="reset-btn">
-                🔄 Restablecer
+                Restablecer
               </button>
             </div>
           </div>
@@ -82,11 +133,11 @@
           <!-- Probabilidades de Destino EDITABLES -->
           <div class="destinos-panel">
             <div class="destinos-header">
-              <h3>🎯 Probabilidades de Destino por Huevo</h3>
+              <h3> Probabilidades de Destino por Huevo</h3>
               <div class="destinos-summary">
                 <span>Total: {{ sumaProbDestinos.toFixed(2) }}</span>
                 <span :class="sumaProbDestinos === 1 ? 'valid' : 'invalid'">
-                  {{ sumaProbDestinos === 1 ? '✅ Válido' : '❌ Debe sumar 1.00' }}
+                  {{ sumaProbDestinos === 1 ? ' Válido' : ' Debe sumar 1.00' }}
                 </span>
               </div>
             </div>
@@ -97,7 +148,7 @@
                   <div class="destino-info">
                     <span class="destino-label">{{ destino.nombre }}:</span>
                     <span class="destino-rango">
-                      {{ getLimiteInferior(index).toFixed(2) }} ≤ u < {{ getLimiteSuperior(index).toFixed(2) }}
+                      {{ formatearDecimal(getLimiteInferior(index)) }} ≤ u < {{ formatearDecimal(getLimiteSuperior(index)) }}
                     </span>
                   </div>
                   <div class="destino-input-group">
@@ -140,9 +191,9 @@
           </div>
 
           <button @click="ejecutarSimulacion" class="run-btn"
-                  :disabled="sumaProbDestinos !== 1 || LIMITES[LIMITES.length - 1] !== 1">
-            🐔 Ejecutar Simulación ({{ DAYS }} días)
-            <span v-if="sumaProbDestinos !== 1 || LIMITES[LIMITES.length - 1] !== 1">
+                  :disabled="sumaProbDestinos !== 1 || !ultimoLimiteValido">
+             Ejecutar Simulación ({{ DAYS }} días)
+            <span v-if="sumaProbDestinos !== 1 || !ultimoLimiteValido">
               (Configuración inválida)
             </span>
           </button>
@@ -152,9 +203,6 @@
         <div class="results-container" v-if="dias.length > 0">
           <div class="results-header">
             <h3>Resultados de la Simulación - {{ DAYS }} días</h3>
-            <div class="results-info">
-              <span>Mostrando días {{ pagination.start + 1 }} - {{ Math.min(pagination.end, DAYS) }} de {{ DAYS }}</span>
-            </div>
           </div>
 
           <div class="table-wrapper">
@@ -206,10 +254,9 @@
         </div>
 
         <!-- Resumen Final -->
-                <!-- Resumen Final -->
         <div class="resumen-final" v-if="dias.length > 0">
           <div class="resumen-header">
-            <h3>📊 RESUMEN GENERAL</h3>
+            <h3> RESUMEN GENERAL</h3>
           </div>
           <div class="resumen-grid">
             <div class="resumen-item">
@@ -231,10 +278,6 @@
             <div class="resumen-item">
               <span class="resumen-label">Total pollos vendidos:</span>
               <span class="resumen-value">{{ totalPollosVend }}</span>
-            </div>
-            <div class="resumen-item">
-              <span class="resumen-label">Total rotos:</span>
-              <span class="resumen-value">{{ totalRotostotalRotostotalRotostotalRotostotalRotostotalRotostotalRotostotalRotostotalRotostotalRotos }}</span>
             </div>
             <div class="resumen-item">
               <span class="resumen-label">Total pollos muertos:</span>
@@ -272,15 +315,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // Parámetros configurables
 const DAYS = ref(300)
 const PRECIO_HUEVO = ref(2.0)
 const PRECIO_POLLO = ref(30.0)
 const semilla = ref(12345)
+const mediaPoisson = ref(1.5)
+const decimales = ref(4)
 
-// Intervalos de distribución Poisson (editables)
+// Intervalos de distribución Poisson (se calcularán automáticamente)
 const LIMITES = ref([0.37, 0.74, 0.91, 0.98, 1.00])
 
 // Destinos editables de los huevos
@@ -312,6 +357,92 @@ const limitesDestinos = computed(() => {
   })
 })
 
+const ultimoLimiteValido = computed(() => {
+  return LIMITES.value.length > 0 && Math.abs(LIMITES.value[LIMITES.value.length - 1] - 1.00) < 0.001
+})
+
+// Función para formatear decimales según la configuración
+const formatearDecimal = (valor) => {
+  return valor.toFixed(decimales.value)
+}
+
+// Función para calcular factorial
+const factorial = (n) => {
+  if (n === 0 || n === 1) return 1
+  let result = 1
+  for (let i = 2; i <= n; i++) {
+    result *= i
+  }
+  return result
+}
+
+// Función para calcular la distribución Poisson
+const calcularIntervalosPoisson = () => {
+  if (mediaPoisson.value <= 0) {
+    alert('La media Poisson debe ser mayor que 0')
+    return
+  }
+
+  const lambda = mediaPoisson.value
+  const intervalos = []
+  let acumulado = 0
+  let k = 0
+
+  // Calcular probabilidades acumuladas hasta que la suma sea muy cercana a 1
+  while (acumulado < 0.9999 && k < 15) {
+    // Fórmula de Poisson: P(X=k) = (e^(-λ) * λ^k) / k!
+    const probabilidad = (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k)
+    acumulado += probabilidad
+
+    // Redondear según el número de decimales especificado
+    const limiteRedondeado = parseFloat(acumulado.toFixed(decimales.value))
+    intervalos.push(Math.min(limiteRedondeado, 1.0))
+
+    k++
+  }
+
+  // Asegurar que el último valor sea exactamente 1.00
+  if (intervalos.length > 0) {
+    intervalos[intervalos.length - 1] = 1.00
+  }
+
+  LIMITES.value = intervalos
+}
+
+// Información de la distribución Poisson calculada
+const infoPoisson = computed(() => {
+  const lambda = mediaPoisson.value
+  const probabilidades = []
+  let acumulado = 0
+  let mediaCalculada = 0
+  let varianzaCalculada = 0
+
+  for (let k = 0; k < LIMITES.value.length; k++) {
+    const prob = k === 0 ? LIMITES.value[0] : LIMITES.value[k] - LIMITES.value[k-1]
+    acumulado = LIMITES.value[k]
+
+    probabilidades.push({
+      k: k,
+      probabilidad: prob,
+      porcentaje: (prob * 100).toFixed(2) + '%',
+      acumulado: acumulado
+    })
+
+    // Calcular media y varianza
+    mediaCalculada += k * prob
+    varianzaCalculada += k * k * prob
+  }
+
+  varianzaCalculada = varianzaCalculada - (mediaCalculada * mediaCalculada)
+
+  return {
+    lambda,
+    probabilidades,
+    mediaTeorica: mediaCalculada,
+    varianza: varianzaCalculada
+  }
+})
+
 // Métodos para destinos
 const validarProbDestino = (index) => {
   if (destinos.value[index].probabilidad < 0) {
@@ -330,7 +461,7 @@ const getLimiteSuperior = (index) => {
   return limitesDestinos.value[index]
 }
 
-// Métodos para intervalos (se mantienen igual)
+// Métodos para intervalos
 const validarIntervalo = (index) => {
   if (LIMITES.value[index] < 0) {
     LIMITES.value[index] = 0
@@ -348,15 +479,17 @@ const validarIntervalo = (index) => {
 }
 
 const agregarIntervalo = () => {
-  if (LIMITES.value.length < 10) {
+  if (LIMITES.value.length < 15) {
     const nuevoLimite = LIMITES.value[LIMITES.value.length - 1] - 0.01
-    LIMITES.value.splice(LIMITES.value.length - 1, 0, nuevoLimite)
+    LIMITES.value.splice(LIMITES.value.length - 1, 0, parseFloat(nuevoLimite.toFixed(decimales.value)))
   }
 }
 
 const eliminarUltimoIntervalo = () => {
   if (LIMITES.value.length > 2) {
     LIMITES.value.splice(LIMITES.value.length - 2, 1)
+    // Asegurar que el último sea 1.00
+    LIMITES.value[LIMITES.value.length - 1] = 1.00
   }
 }
 
@@ -471,7 +604,7 @@ const ejecutarSimulacion = () => {
   }
 }
 
-// Paginación y estadísticas (se mantienen igual)
+// Paginación y estadísticas
 const diasPaginados = computed(() => {
   const start = (pagination.value.current - 1) * pagination.value.itemsPerPage
   const end = start + parseInt(pagination.value.itemsPerPage)
@@ -526,12 +659,15 @@ const totalPollosMuertos = computed(() => {
   // Esta sería calculada durante la simulación, por simplicidad la estimamos
   return Math.round(totalHuevos.value * destinos.value.find(d => d.tipo === 'pollo-muerto').probabilidad)
 })
+
+// Calcular intervalos automáticamente al cargar el componente
+calcularIntervalosPoisson()
 </script>
 
 <style scoped>
-/* Estilos anteriores se mantienen, solo agrego los nuevos para destinos */
+/* Estilos anteriores se mantienen, agregamos los nuevos */
 
-.destinos-panel {
+.poisson-control-panel {
   background: white;
   padding: 20px;
   border-radius: 8px;
@@ -539,216 +675,154 @@ const totalPollosMuertos = computed(() => {
   margin: 20px 0;
 }
 
-.destinos-header {
+.poisson-control-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid #9b59b6;
 }
 
-.destinos-header h3 {
+.poisson-control-header h3 {
   margin: 0;
   color: #2c3e50;
 }
 
-.destinos-summary {
+.calc-btn {
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.calc-btn:hover {
+  background: #8e44ad;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+}
+
+.poisson-info-panel {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin-top: 15px;
+}
+
+.poisson-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.poisson-info-header h4 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.poisson-stats {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 5px;
+  font-size: 0.9rem;
+  color: #7f8c8d;
   font-weight: 600;
 }
 
-.destinos-summary .valid {
-  color: #27ae60;
-}
-
-.destinos-summary .invalid {
-  color: #e74c3c;
-}
-
-.destinos-grid {
+.poisson-distribucion {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.destino-item {
-  padding: 15px;
-  border-radius: 8px;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
   border: 1px solid #e9ecef;
 }
 
-.destino-item.roto {
-  background: #fef9e7;
-  border-left: 4px solid #f39c12;
-}
-
-.destino-item.huevo-vendible {
-  background: #e8f6f3;
-  border-left: 4px solid #27ae60;
-}
-
-.destino-item.pollo-muerto {
-  background: #fdedec;
-  border-left: 4px solid #e74c3c;
-}
-
-.destino-item.pollo-vendible {
-  background: #e8f4fc;
-  border-left: 4px solid #3498db;
-}
-
-.destino-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.destino-info {
+.poisson-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.destino-label {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.destino-rango {
-  font-family: 'Courier New', monospace;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
-.destino-input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.destino-input-group label {
-  font-weight: 600;
-  color: #2c3e50;
-  min-width: 100px;
-}
-
-.destino-input {
-  width: 80px;
-  padding: 8px;
-  border: 2px solid #ddd;
+  padding: 8px 12px;
+  background: #f8f9fa;
   border-radius: 4px;
+  border-left: 3px solid #9b59b6;
+  font-size: 0.85rem;
+}
+
+.poisson-k {
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 60px;
+}
+
+.poisson-prob {
+  font-family: 'Courier New', monospace;
+  color: #e67e22;
+  min-width: 100px;
+  text-align: right;
+}
+
+.poisson-percent {
+  color: #27ae60;
+  min-width: 60px;
   text-align: center;
   font-weight: 600;
 }
 
-.destino-input:focus {
-  outline: none;
-  border-color: #3498db;
+.poisson-acum {
+  font-family: 'Courier New', monospace;
+  color: #3498db;
+  min-width: 100px;
+  text-align: right;
+  font-size: 0.8rem;
 }
 
-.destino-percent {
-  font-weight: 600;
-  color: #7f8c8d;
-  min-width: 40px;
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .poisson-control-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .poisson-info-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .poisson-stats {
+    align-items: flex-start;
+  }
+
+  .poisson-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .poisson-k,
+  .poisson-prob,
+  .poisson-percent,
+  .poisson-acum {
+    min-width: auto;
+    text-align: left;
+  }
 }
 
-.destino-visual {
-  flex: 1;
-}
-
-.destino-bar {
-  width: 100%;
-  height: 8px;
-  background: #ecf0f1;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.destino-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.destino-bar-fill.roto {
-  background: #f39c12;
-}
-
-.destino-bar-fill.huevo-vendible {
-  background: #27ae60;
-}
-
-.destino-bar-fill.pollo-muerto {
-  background: #e74c3c;
-}
-
-.destino-bar-fill.pollo-vendible {
-  background: #3498db;
-}
-
-.destinos-preview {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-}
-
-.destinos-preview h4 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-}
-
-.preview-distribucion {
-  display: flex;
-  height: 30px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 2px solid #34495e;
-}
-
-.preview-segmento {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: width 0.3s ease;
-  position: relative;
-}
-
-.preview-segmento.roto {
-  background: #f39c12;
-}
-
-.preview-segmento.huevo-vendible {
-  background: #27ae60;
-}
-
-.preview-segmento.pollo-muerto {
-  background: #e74c3c;
-}
-
-.preview-segmento.pollo-vendible {
-  background: #3498db;
-}
-
-.preview-text {
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: white;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-}
-
-.run-btn:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
+/* Estilos existentes se mantienen igual */
 .granero-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%);
@@ -779,17 +853,10 @@ h1 {
   font-weight: 700;
 }
 
-.subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
-  font-weight: 300;
-}
-
 .content {
   padding: 25px;
 }
 
-/* Panel de configuración */
 .config-panel {
   background: #f8f9fa;
   padding: 25px;
@@ -831,7 +898,6 @@ h1 {
   box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
 }
 
-/* Panel de Intervalos */
 .intervalos-panel {
   background: white;
   padding: 20px;
@@ -984,249 +1050,6 @@ h1 {
   background: #2980b9;
 }
 
-/* Panel de Destinos */
-.destinos-panel {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  border: 2px solid #e9ecef;
-  margin-bottom: 20px;
-}
-
-.destinos-panel h3 {
-  margin: 0 0 15px 0;
-  color: #2c3e50;
-}
-
-.destinos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-}
-
-.destino-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 4px solid #bdc3c7;
-}
-
-.destino-item.vendible {
-  background: #e8f6f3;
-  border-left-color: #27ae60;
-}
-
-.destino-label {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.destino-rango {
-  font-family: 'Courier New', monospace;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
-.destino-prob {
-  font-weight: bold;
-  color: #e67e22;
-}
-
-.run-btn {
-  background: linear-gradient(135deg, #e67e22, #d35400);
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.run-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
-}
-
-/* Resultados */
-.results-container {
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 25px;
-}
-
-.results-header {
-  background: #34495e;
-  color: white;
-  padding: 15px 20px;
-  border-bottom: 2px solid #2c3e50;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.results-header h3 {
-  margin: 0;
-}
-
-.results-info {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-.table-wrapper {
-  max-height: 600px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.table-header {
-  display: grid;
-  grid-template-columns: 6% 8% 8% 30% 8% 8% 10% 12%;
-  background: #2c3e50;
-  color: white;
-  font-weight: 600;
-  padding: 12px 15px;
-  border-bottom: 2px solid #34495e;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  flex-shrink: 0;
-  font-size: 0.9rem;
-}
-
-.header-cell {
-  padding: 0 5px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.table-body {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 550px;
-}
-
-.table-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.table-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.table-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.result-row {
-  display: grid;
-  grid-template-columns: 6% 8% 8% 30% 8% 8% 10% 12%;
-  padding: 10px 15px;
-  border-bottom: 1px solid #ecf0f1;
-  transition: background-color 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.result-row:hover {
-  background: #f8f9fa;
-}
-
-.cell {
-  padding: 0 5px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Courier New', monospace;
-}
-
-.cell.u-huevos {
-  justify-content: flex-start;
-  text-align: left;
-  font-size: 0.8rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Paginación */
-.pagination-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-top: 1px solid #e9ecef;
-}
-
-.pag-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s ease;
-}
-
-.pag-btn:hover:not(:disabled) {
-  background: #2980b9;
-}
-
-.pag-btn:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-}
-
-.pag-info {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.page-select {
-  padding: 8px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
-  background: white;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .config-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .intervalo-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .table-header,
-  .result-row {
-    grid-template-columns: 10% 12% 12% 30% 12% 12% 12%;
-    font-size: 0.8rem;
-  }
-
-  .header-cell.u-huevos,
-  .cell.u-huevos {
-    display: none;
-  }
-}
 .destinos-panel {
   background: white;
   padding: 20px;
@@ -1439,6 +1262,24 @@ h1 {
   text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 }
 
+.run-btn {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.run-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+}
+
 .run-btn:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
@@ -1446,18 +1287,155 @@ h1 {
   box-shadow: none;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .destino-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
+.results-container {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
 
-  .destino-input-group {
-    justify-content: space-between;
-  }
-  /* Resumen Final */
+.results-header {
+  background: #34495e;
+  color: white;
+  padding: 15px 20px;
+  border-bottom: 2px solid #2c3e50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.results-header h3 {
+  margin: 0;
+}
+
+.results-info {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.table-wrapper {
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 6% 8% 8% 30% 8% 8% 10% 12%;
+  background: #2c3e50;
+  color: white;
+  font-weight: 600;
+  padding: 12px 15px;
+  border-bottom: 2px solid #34495e;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.header-cell {
+  padding: 0 5px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 550px;
+}
+
+.table-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.table-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 6% 8% 8% 30% 8% 8% 10% 12%;
+  padding: 10px 15px;
+  border-bottom: 1px solid #ecf0f1;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.result-row:hover {
+  background: #f8f9fa;
+}
+
+.cell {
+  padding: 0 5px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+}
+
+.cell.u-huevos {
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.pag-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.pag-btn:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.pag-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.pag-info {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.page-select {
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background: white;
+}
+
 .resumen-final {
   background: linear-gradient(135deg, #34495e, #2c3e50);
   color: white;
@@ -1527,40 +1505,6 @@ h1 {
   border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
-/* Colores específicos para diferentes tipos de valores */
-.resumen-item:nth-child(1) .resumen-value,
-.resumen-item:nth-child(2) .resumen-value {
-  color: #f39c12; /* Naranja para ingresos */
-  border-color: rgba(243, 156, 18, 0.3);
-}
-
-.resumen-item:nth-child(3) .resumen-value,
-.resumen-item:nth-child(4) .resumen-value {
-  color: #3498db; /* Azul para huevos */
-  border-color: rgba(52, 152, 219, 0.3);
-}
-
-.resumen-item:nth-child(5) .resumen-value {
-  color: #9b59b6; /* Púrpura para pollos vendidos */
-  border-color: rgba(155, 89, 182, 0.3);
-}
-
-.resumen-item:nth-child(6) .resumen-value {
-  color: #e74c3c; /* Rojo para rotos */
-  border-color: rgba(231, 76, 60, 0.3);
-}
-
-.resumen-item:nth-child(7) .resumen-value {
-  color: #95a5a6; /* Gris para pollos muertos */
-  border-color: rgba(149, 165, 166, 0.3);
-}
-
-.resumen-item:nth-child(8) .resumen-value {
-  color: #1abc9c; /* Verde agua para tasas */
-  border-color: rgba(26, 188, 156, 0.3);
-}
-
-/* Estadísticas Rápidas */
 .quick-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1615,29 +1559,38 @@ h1 {
   font-weight: 700;
 }
 
-/* Efectos de hover específicos para quick-stats */
-.quick-stat:nth-child(1):hover {
-  border-color: #3498db;
-  background: #e8f4fc;
-}
-
-.quick-stat:nth-child(2):hover {
-  border-color: #27ae60;
-  background: #e8f6f3;
-}
-
-.quick-stat:nth-child(3):hover {
-  border-color: #9b59b6;
-  background: #f4ecf7;
-}
-
-.quick-stat.ingreso:hover {
-  border-color: #d35400;
-  background: linear-gradient(135deg, #fdcb6e, #e17055);
-}
-
-/* Responsive para resumen */
 @media (max-width: 768px) {
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intervalo-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .table-header,
+  .result-row {
+    grid-template-columns: 10% 12% 12% 30% 12% 12% 12%;
+    font-size: 0.8rem;
+  }
+
+  .header-cell.u-huevos,
+  .cell.u-huevos {
+    display: none;
+  }
+
+  .destino-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .destino-input-group {
+    justify-content: space-between;
+  }
+
   .resumen-grid {
     grid-template-columns: 1fr;
   }
@@ -1697,43 +1650,5 @@ h1 {
   .quick-value {
     font-size: 1.8rem;
   }
-}
-
-/* Animaciones suaves */
-.resumen-item,
-.quick-stat {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Efecto de brillo en hover para resumen items */
-.resumen-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  transition: left 0.5s;
-}
-
-.resumen-item:hover::before {
-  left: 100%;}
 }
 </style>

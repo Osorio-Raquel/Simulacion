@@ -3,7 +3,6 @@
     <div class="container">
       <header>
         <h1>Simulación de Optimización</h1>
-        <div class="subtitle">Réplica exacta del código Java en Vue.js</div>
       </header>
 
       <div class="content">
@@ -28,7 +27,7 @@
             >
           </div>
           <button @click="ejecutarSimulacion" class="run-btn">
-            🚀 Ejecutar Simulación
+             Ejecutar Simulación
           </button>
         </div>
 
@@ -72,9 +71,9 @@
           <!-- Mejor solución -->
           <div class="mejor-solucion-panel" v-if="mejorSolucion">
             <div class="mejor-solucion-header">
-              <span class="trophy">🏆</span>
+              <span class="trophy"></span>
               <span class="mejor-text">MEJOR SOLUCIÓN ENCONTRADA</span>
-              <span class="trophy">🏆</span>
+              <span class="trophy"></span>
             </div>
             <div class="mejor-solucion-details">
               Z = <span class="highlight">{{ mejorSolucion.z.toFixed(4) }}</span>
